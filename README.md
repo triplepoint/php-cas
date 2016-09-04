@@ -1,6 +1,6 @@
-# {PROJECT_TITLE}
+# php-cas-solver
 ## Introduction
-Master: [![Build Status](https://travis-ci.org/{PROJECT_OWNER}/{PROJECT_TITLE}.png?branch=master)](https://travis-ci.org/{PROJECT_OWNER}/{PROJECT_TITLE})
+Master: [![Build Status](https://travis-ci.org/triplepoint/php-cas-solver.png?branch=master)](https://travis-ci.org/triplepoint/php-cas-solver)
 
 ## Installation
 ### Packagist Info

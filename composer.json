@@ -1,5 +1,5 @@
 {
-    "name":        "{PROJECT_OWNER}/{PROJECT_TITLE}",
+    "name":        "triplepoint/php-cas-solver",
 
     "description": "",
 
@@ -9,7 +9,7 @@
          "", ""
      ],
 
-    "homepage":    "https://github.com/{PROJECT_OWNER}/{PROJECT_TITLE}",
+    "homepage":    "https://github.com/triplepoint/php-cas-solver",
 
     "license": "MIT",
 
@@ -24,8 +24,8 @@
 
     "support": {
     	"email":  "jonathan@jonathan-hanson.org",
-    	"issues": "https://github.com/{PROJECT_OWNER}/{PROJECT_TITLE}/issues",
-    	"source": "https://github.com/{PROJECT_OWNER}/{PROJECT_TITLE}"
+    	"issues": "https://github.com/triplepoint/php-cas-solver/issues",
+    	"source": "https://github.com/triplepoint/php-cas-solver"
     },
 
     "require": {
@@ -39,13 +39,13 @@
 
     "autoload": {
         "psr-4": {
-        	"{PROJECT_NAMESPACE}\\":     "source/"
+        	"CASSolver\\":     "source/"
     	}
     },
 
     "autoload-dev": {
         "psr-4": {
-             "{PROJECT_NAMESPACE}Test\\": "tests/"
+             "CASSolverTest\\": "tests/"
         }
     }
 }
