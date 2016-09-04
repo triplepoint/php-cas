@@ -1,0 +1,51 @@
+{
+    "name":        "{PROJECT_OWNER}/{PROJECT_TITLE}",
+
+    "description": "",
+
+    "type": "library",
+
+    "keywords": [
+         "", ""
+     ],
+
+    "homepage":    "https://github.com/{PROJECT_OWNER}/{PROJECT_TITLE}",
+
+    "license": "MIT",
+
+    "authors": [
+        {
+            "name":     "Jonathan Hanson",
+            "email":    "jonathan@jonathan-hanson.org",
+            "homepage": "http://www.jonathan-hanson.org/",
+            "role":     "Developer"
+        }
+    ],
+
+    "support": {
+    	"email":  "jonathan@jonathan-hanson.org",
+    	"issues": "https://github.com/{PROJECT_OWNER}/{PROJECT_TITLE}/issues",
+    	"source": "https://github.com/{PROJECT_OWNER}/{PROJECT_TITLE}"
+    },
+
+    "require": {
+        "php":           ">=5.4.0"
+    },
+
+    "require-dev": {
+        "phpunit/phpunit":           "4.8.*",
+        "squizlabs/php_codesniffer": "2.2.*"
+    },
+
+    "autoload": {
+        "psr-4": {
+        	"{PROJECT_NAMESPACE}\\":     "source/"
+    	}
+    },
+
+    "autoload-dev": {
+        "psr-4": {
+             "{PROJECT_NAMESPACE}Test\\": "tests/"
+        }
+    }
+}
