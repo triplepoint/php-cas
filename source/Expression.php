@@ -169,8 +169,8 @@ class Expression
     protected function stripOuterParentheses(array $token_list)
     {
         while (count($token_list) >= 2 &&
-               $token_list[0]['string'] === '('
-               && $token_list[count($token_list) - 1]['string'] === ')'
+               $token_list[0]['string'] === '(' &&
+               $token_list[count($token_list) - 1]['string'] === ')'
         ) {
             $token_list = array_slice($token_list, 1, -1);
         }
@@ -223,6 +223,16 @@ class Expression
         // Throw an exception if it doesn't validate
         // examples of invalid terms that might show up
         // - '2x'
+        // Rather than blacklist bad forms, might just be best to whitelist the
+        // allowed term types
+        // - '1'
+        // - '1.234'
+        // - 'x'
+        // - 'M_PI'
+        // - 'pi'
+        // How about:
+        // - anything that passes is_numeric() is ok - it's a number
+        // - anything that matches /[A-Za-z]+([_]+[A-Za-z]+)*/  - letters with underscores enclosed
     }
 
     /**
