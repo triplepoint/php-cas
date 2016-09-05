@@ -39,13 +39,13 @@
 
     "autoload": {
         "psr-4": {
-        	"CASSolver\\":     "source/"
+        	"CAS\\":     "source/"
     	}
     },
 
     "autoload-dev": {
         "psr-4": {
-             "CASSolverTest\\": "tests/"
+             "CASTest\\": "tests/"
         }
     }
 }
