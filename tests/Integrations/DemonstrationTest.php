@@ -1,5 +1,5 @@
 <?php
-namespace CASTest;
+namespace CASTest\Integrations;
 
 use PHPUnit\Framework\TestCase;
 use CAS\RelationSolver;
@@ -7,12 +7,12 @@ use CAS\Relation;
 use CAS\Expression;
 use CAS\Exception\UnknownVariable;
 
-class IntegrationTest extends TestCase
+class DemonstrationTest extends TestCase
 {
     /**
      * @dataProvider validRelationProvider
      */
-    public function testsolve_forVariable($lhs, $rel, $rhs, $res_lhs, $res_rel, $res_rhs)
+    public function testsolveForVariable($lhs, $rel, $rhs, $res_lhs, $res_rel, $res_rhs)
     {
         $solver = new RelationSolver(
             new Relation(
@@ -22,7 +22,7 @@ class IntegrationTest extends TestCase
             )
         );
 
-        $res_relation = $solver->solve_for($res_lhs);
+        $res_relation = $solver->solveFor($res_lhs);
 
         $this->assertInstanceOf(Relation::class, $res_relation);
 
@@ -34,7 +34,7 @@ class IntegrationTest extends TestCase
     /**
      * @expectedException \CAS\Exception\UnknownVariable
      */
-    public function testsolve_forUnknownVariableThrowsException()
+    public function testsolveForUnknownVariableThrowsException()
     {
         $solver = new RelationSolver(
             new Relation(
@@ -44,7 +44,7 @@ class IntegrationTest extends TestCase
             )
         );
 
-        $x_exp = $solver->solve_for('y');
+        $x_exp = $solver->solveFor('y');
     }
 
     public function validRelationProvider()
