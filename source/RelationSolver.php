@@ -16,7 +16,7 @@ class RelationSolver
         // given variable
 
         $relation = new Relation( // TODO - stand-in value, for testing.
-            new Expression('x'),
+            new Expression($variable),
             '=',
             new Expression('something')
         );
