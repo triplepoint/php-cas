@@ -1,6 +1,6 @@
-# php-cas-solver
+# php-cas
 ## Introduction
-Master: [![Build Status](https://travis-ci.org/triplepoint/php-cas-solver.png?branch=master)](https://travis-ci.org/triplepoint/php-cas-solver)
+Master: [![Build Status](https://travis-ci.org/triplepoint/php-cas.png?branch=master)](https://travis-ci.org/triplepoint/php-cas)
 
 ## Installation
 ### Packagist Info

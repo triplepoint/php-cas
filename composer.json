@@ -1,5 +1,5 @@
 {
-    "name":        "triplepoint/php-cas-solver",
+    "name":        "triplepoint/php-cas",
 
     "description": "",
 
@@ -9,7 +9,7 @@
          "", ""
      ],
 
-    "homepage":    "https://github.com/triplepoint/php-cas-solver",
+    "homepage":    "https://github.com/triplepoint/php-cas",
 
     "license": "MIT",
 
@@ -24,8 +24,8 @@
 
     "support": {
     	"email":  "jonathan@jonathan-hanson.org",
-    	"issues": "https://github.com/triplepoint/php-cas-solver/issues",
-    	"source": "https://github.com/triplepoint/php-cas-solver"
+    	"issues": "https://github.com/triplepoint/php-cas/issues",
+    	"source": "https://github.com/triplepoint/php-cas"
     },
 
     "require": {
