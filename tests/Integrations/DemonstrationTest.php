@@ -59,5 +59,4 @@ class DemonstrationTest extends TestCase
             ['(373.15 - x) * 3/2', '<', 'y',  'x', '>', '373.15 - ( 12 / 3 * 2 )'],
         ];
     }
-
 }

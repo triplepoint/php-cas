@@ -7,85 +7,71 @@ namespace CAS;
  *
  * Note that this class implements a subset of mathematical expressions called
  * arithmetic expressions.  Multiplication, division, addition, and subtraction
- * are represented, as is the factorial operator and parentheses.  But other
- * expressions like exponents and trigonometry functions, for example, are not
- * supported.
+ * are represented, as are parentheses.  But other expressions like exponents
+ * and trigonometry functions, for example, are not supported.
  */
 class Expression
 {
-    const OPERATOR_MULTIPLY = 0;
-    const OPERATOR_DIVIDE = 1;
-    const OPERATOR_ADD = 2;
-    const OPERATOR_SUBTRACT = 3;
-    const OPERATOR_FACTORIAL = 4;
-
-    protected $operator_symbols = [
-        Expression::OPERATOR_MULTIPLY  => '*',
-        Expression::OPERATOR_FACTORIAL => '!',
-        Expression::OPERATOR_DIVIDE    => '/',
-        Expression::OPERATOR_ADD       => '+',
-        Expression::OPERATOR_SUBTRACT  => '-',
-    ];
-
+    protected $defined_tokens;
+    protected $token_list;
     protected $parse_tree;
 
     public function __construct($expression)
     {
-        $token_list = $this->tokenizeExpression($expression);
-        $this->parse_tree = $this->parseExpression($token_list);
+        $this->defined_tokens = [
+            new Token('(', Token::TYPE_OPEN_PARENTHESIS),
+            new Token(')', Token::TYPE_CLOSE_PARENTHESIS),
+            new Token('*', Token::TYPE_OPERATOR, 1),
+            new Token('/', Token::TYPE_OPERATOR, 1),
+            new Token('+', Token::TYPE_OPERATOR, 2),
+            new Token('-', Token::TYPE_OPERATOR ,2),
+        ];
+
+        $this->token_list = $this->tokenizeExpression($expression);
+        $this->parse_tree = $this->parseExpression($this->token_list);
     }
 
     /**
-     * Given a string expression, break it up into a list of the various
-     * tokens.  Each token is an array with these keys:
-     * - string - the string value of the token
+     * Given a string expression, break it up into an ordered list of the
+     * various Token objects.
      */
     protected function tokenizeExpression($expression)
     {
         // Remove any spaces in the expression
         $expression = str_replace(' ', '', $expression);
 
-        // These elements are considered distinct tokens on which to
-        // break the expression.
-        $defined_tokens = array_merge(
-            ['(', ')'],
-            array_values($this->operator_symbols)
-        );
-
-        // As long as there's still some expression string left to parse
         $tokens = [];
         $shift_buffer = '';
+
+        // As long as there's still some expression string left to parse
         while (strlen($expression) > 0) {
 
-            // Test each of the known tokens
-            foreach ($defined_tokens as $parse_token) {
+            // Test each of the defined tokens
+            foreach ($this->defined_tokens as $token) {
 
                 // If this token is currently at the head of the expression
-                if (strpos($expression, $parse_token) === 0) {
+                if (strpos($expression, $token->string) === 0) {
 
                     // Save any buffered content as a new token
                     if ($shift_buffer !== '') {
-                        $tokens[] = [
-                            'string' => $shift_buffer,
-                        ];
+                        $tokens[] = new Token($shift_buffer, Token::TYPE_OPERAND);
                         $shift_buffer = '';
                     }
 
-                    // Bite off the token from the expression string
-                    $expression = substr($expression, strlen($parse_token));
-
                     // Add the identified token as a new token
-                    $tokens[] = [
-                        'string' => $parse_token
-                    ];
+                    $tokens[] = $token;
 
-                    // Start over testing all the tokens
+                    // Remove the identified token from the head of the
+                    // expression string
+                    $expression = substr($expression, strlen($token->string));
+
+                    // Start over with what's left of the expression string
                     continue 2;
                 }
             }
 
             // If no tokens were identified at the head of the expression,
-            // shift off another character from the expression and try again.
+            // shift another character into the buffer and try again.
             $shift_buffer .= $expression[0];
             $expression = substr($expression, 1);
         }
@@ -93,9 +79,7 @@ class Expression
         // Now that we're done with the expression string, if there's anything
         // still stored in the buffer, write it as a new token
         if ($shift_buffer !== '') {
-            $tokens[] = [
-                'string' => $shift_buffer,
-            ];
+            $tokens[] = new Token($shift_buffer, Token::TYPE_OPERAND);
             $shift_buffer = '';
         }
 
@@ -104,9 +88,9 @@ class Expression
     }
 
     /**
-     * Given a tokenized expression, parse it into a structured tree where
-     * each element is either a single string term, or an array with recursive
-     * 'lhs' and 'rhs' elements plus an 'operator' element.
+     * Given a tokenized expression as a list, parse it into a structured tree
+     * where each element is either an operand Token, or an array with
+     * recursive tree 'lhs' and 'rhs' elements plus an 'operator' Token.
      */
     protected function parseExpression(array $token_list)
     {
@@ -114,19 +98,24 @@ class Expression
 
         $token_list = $this->stripOuterParentheses($token_list);
 
-        $operator_index = $this->findNextLeastOperator($token_list);
-
-        // If the expression was a single term (no operator found)
-        if ($operator_index === false) {
-            $this->testTermForCorrectness($token_list);
-            return $token_list;
+        // If the token list is empty, let's treat that as a single "" token,
+        // for parsing and validation purposes.
+        if ($token_list === []) {
+            $token_list = [
+                new Token('', Token::TYPE_OPERAND)
+            ];
         }
 
-        // Otherwise, split the expression on that operator,
-        // and recurse both sides
+        $operator_index = $this->findNextOperator($token_list);
+
+        if ($operator_index === false) {
+            $this->testOperandForCorrectness($token_list[0]);
+            return $token_list[0];
+        }
+
         $operator = $token_list[$operator_index];
-        $lhs = array_slice($token_list, 0, $operator_position);
-        $rhs = array_slice($token_list, $operator_position + 1);
+        $lhs = array_slice($token_list, 0, $operator_index);
+        $rhs = array_slice($token_list, $operator_index + 1);
         return [
             'lhs'      => $this->parseExpression($lhs),
             'operator' => $operator,
@@ -135,30 +124,30 @@ class Expression
     }
 
     /**
-     * Given a tokenized expression, ensure that parentheses are properly
-     * nested and balanced.
+     * Given a tokenized expression as a list, test whether the parentheses are
+     * properly nested and balanced.
      */
     protected function testBalancedParentheses(array $token_list)
     {
         $paren_count = 0;
         foreach ($token_list as $token) {
 
-            // Keep track of the current parenthesis count
-            if ($token['string'] === '(') {
+            // Keep track of the current open parenthesis count
+            if ($token->type === TOKEN::TYPE_OPEN_PARENTHESIS) {
                 ++$paren_count;
-            } elseif ($token['string'] === ')') {
+            } elseif ($token->type === TOKEN::TYPE_CLOSE_PARENTHESIS) {
                 --$paren_count;
             }
 
             // If we've closed more than we've opened, that's an error
             if ($paren_count < 0) {
-                throw new Exception\UnbalancedParentheses([':expression' => print_r($expression, true)]);
+                throw new Exception\UnbalancedParentheses([':expression' => print_r($token_list, true)]);
             }
         }
 
         // if there's still any unclosed parentheses, that's an error
         if ($paren_count !== 0) {
-            throw new Exception\UnbalancedParentheses([':expression' => print_r($expression, true)]);
+            throw new Exception\UnbalancedParentheses([':expression' => print_r($token_list, true)]);
         }
     }
 
@@ -169,8 +158,8 @@ class Expression
     protected function stripOuterParentheses(array $token_list)
     {
         while (count($token_list) >= 2 &&
-               $token_list[0]['string'] === '(' &&
-               $token_list[count($token_list) - 1]['string'] === ')'
+               $token_list[0]->type === TOKEN::TYPE_OPEN_PARENTHESIS &&
+               $token_list[count($token_list) - 1]->type === TOKEN::TYPE_CLOSE_PARENTHESIS
         ) {
             $token_list = array_slice($token_list, 1, -1);
         }
@@ -178,99 +167,109 @@ class Expression
     }
 
     /**
-     * Find the lowest-ranked operator, picking the rightmost of duplicates,
+     * Find the lowest-precedence operator, picking the rightmost of duplicates,
      * and skipping over parenthesis blocks.  Return the index of the found
      * operator.  If there's no operator found, return false.
      */
-    protected function findNextLeastOperator(array $token_list)
+    protected function findNextOperator(array $token_list)
     {
-        $gathered_operators = [];
+        $operators = [];
 
-        // Loop over all the characters in the expression, last to first
+        // Loop over all the tokens in the expression, last to first
         $token_list = array_reverse($token_list, true);
         $paren_count = 0;
-        foreach ($token_list as $index => $token) {
+        foreach ($token_list as $position => $token) {
 
-            // Keep track of the current parenthesis count
-            if ($token['string'] === ')') {
+            // If this token is a parenthesis, handle the counter and move
+            // on to the next token
+            if ($token->type === Token::TYPE_CLOSE_PARENTHESIS) {
                 ++$paren_count;
-            } elseif ($token['string'] === '(') {
+                continue;
+            } elseif ($token->type === Token::TYPE_OPEN_PARENTHESIS) {
                 --$paren_count;
+                continue;
             }
 
-            // If we're in a parenthesis, advance until we're out of it
+            // If we're inside a parenthesis pair, advance until we're out of it
             if ($paren_count !== 0) {
                 continue;
             }
 
-            // If the character is in the operator set, log it in the
-            // gathered operators set
-            // TODO finish this
-            // if (in_array($character, haystack)) {
-            //     $gathered_operators['priority'][] = thing;
-            // }
+            // If the token is an operator, record its position in the operators
+            // set, indexed by its precedence
+            if ($token->type === Token::TYPE_OPERATOR) {
+                $operators[$token->precedence][] = $position;
+            }
         }
 
-        // With the set of identified operators organized by priority, return
-        // the index position of the right-most of the least-ranked operator.
+        // If there were no operators in the expression, return false
+        if ($operators === []) {
+            return false;
+        }
 
-        return false;
-    }
+        // With the set of identified operators organized by precedence and
+        // position, return the index position of the right-most of the
+        // least-precedence operators.
+        ksort($operators);
+        $least_precedence_operator_positions = array_pop($operators);
 
-    protected function testTermForCorrectness($term)
-    {
-        // TODO - not clear what a valid term check would be
-        // Throw an exception if it doesn't validate
-        // examples of invalid terms that might show up
-        // - '2x'
-        // Rather than blacklist bad forms, might just be best to whitelist the
-        // allowed term types
-        // - '1'
-        // - '1.234'
-        // - 'x'
-        // - 'M_PI'
-        // - 'pi'
-        // How about:
-        // - anything that passes is_numeric() is ok - it's a number
-        // - anything that matches /[A-Za-z]+([_]+[A-Za-z]+)*/  - letters with underscores enclosed
+        sort($least_precedence_operator_positions);
+        $rightmost_least_precedence_operator_position = array_pop($least_precedence_operator_positions);
+
+        return $rightmost_least_precedence_operator_position;
     }
 
     /**
-     * return a string form of the expression.
+     * For operand Tokens, ensure that they're properly formed.  They can be:
+     * - anything php considers is_numeric(), or
+     * - anything that passes php's variable name rules
+     * See php's documentation on variables:
+     * http://php.net/manual/en/language.variables.basics.php
      */
+    protected function testOperandForCorrectness(Token $operand)
+    {
+        if (is_numeric($operand->string)) {
+            return;
+        } elseif (preg_match('/[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/', $operand->string) === 1) {
+            return;
+        }
+
+        throw new Exception\InvalidOperand([':operand' => $operand->string]);
+    }
+
     public function __toString()
     {
-        return ''; // TODO - needs implementing - crawl upward through the
-        // tree and assemble with explicit () pairs
+        return $this->getParseTreeAsString($this->parse_tree);
+    }
+
+    protected function getParseTreeAsString($tree)
+    {
+        // if the tree is a subtree
+        if (array_key_exists('lhs', $tree)) {
+            return '(' .
+                $this->getParseTreeAsString($tree['lhs']) .
+                ' ' . $tree['operator']->string . ' ' .
+                $this->getParseTreeAsString($tree['rhs']) .
+                ')';
+
+        } elseif ($tree !== []) {
+            // Otherwise if this is a operand Token, just return it as a string
+            return $tree->string;
+
+        } else {
+            // Otherwise, it's an empty list, just return an empty string
+            return '';
+        }
     }
 
     /**
      * Return this expression as a valid string of PHP code.
      */
-    public function toPhpString()
-    {
-        $string = (string) $this;
-        // TODO - basically, put '$' in front of any term that isn't a number.
-        // TODO - check first to see if a constant is_defined() for the variable first.
-        return $string;
-    }
-
-    /**
-     * Only allow getting the specified properties.
-     */
-    public function __get($name)
-    {
-        if (!in_array($name, [])) {
-            throw new UnexpectedValueException("Value ($name) not available.");
-        }
-        return $this->$name;
-    }
-
-    /**
-     * Changing state is not allowed on this object.
-     */
-    public function __set($name, $value)
-    {
-        throw new Exception\Immutable();
-    }
+    // public function toPhpString()
+    // {
+    //     $string = (string) $this;
+    //     // TODO - basically, put '$' in front of any term that isn't a number.
+    //     // TODO - check first to see if a constant is_defined() for the variable first.
+    //     return $string;
+    // }
 }

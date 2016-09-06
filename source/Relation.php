@@ -64,7 +64,7 @@ class Relation
     public function __get($name)
     {
         if (!in_array($name, ['lhs', 'rhs', 'relation'])) {
-            throw new UnexpectedValueException("Value ($name) not available.");
+            throw new \UnexpectedValueException("Value ($name) not available.");
         }
         return $this->$name;
     }
