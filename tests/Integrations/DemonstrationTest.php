@@ -12,7 +12,7 @@ class DemonstrationTest extends TestCase
     /**
      * @dataProvider validRelationProvider
      */
-    public function testsolveForVariable($lhs, $rel, $rhs, $res_lhs, $res_rel, $res_rhs)
+    public function testsolveForVariable($lhs, $rel, $rhs, $solve_for, $res_rel, $res_rhs)
     {
         $relation = new Relation(
             new Expression($lhs),
@@ -21,11 +21,11 @@ class DemonstrationTest extends TestCase
         );
         $solver = new RelationSolver($relation);
 
-        $res_relation = $solver->solveFor($res_lhs);
+        $res_relation = $solver->solveFor($solve_for);
 
         $this->assertInstanceOf(Relation::class, $res_relation);
 
-        $this->assertEquals($res_lhs, (string) $res_relation->lhs);
+        $this->assertEquals($solve_for, (string) $res_relation->lhs);
         $this->assertEquals($res_rel, (string) $res_relation->relation);
         $this->assertEquals($res_rhs, (string) $res_relation->rhs);
     }
