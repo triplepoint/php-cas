@@ -28,15 +28,15 @@ class Relation
     protected $rhs;
     protected $relation;
 
-    public function __construct(Expression $lhs, $relation, Expression $rhs)
+    public function __construct(Expression $lhs, $relation_string, Expression $rhs)
     {
-        if (!in_array($relation, $this->relation_symbols)) {
-            throw new Exception\UnknownRelationOperator([':operator' => $relation]);
+        if (!in_array($relation_string, $this->relation_symbols)) {
+            throw new Exception\UnknownRelationOperator([':operator' => $relation_string]);
         }
+        $this->relation = array_search($relation_string, $this->relation_symbols);
 
         $this->lhs = $lhs;
         $this->rhs = $rhs;
-        $this->relation = $relation;
     }
 
     /**
@@ -44,19 +44,21 @@ class Relation
      */
     public function __toString()
     {
-        return (string) $this->lhs . $this->relation_symbols[$this->relation] . (string) $this->lhs;
+        return (string) $this->lhs .
+            ' '. $this->relation_symbols[$this->relation] . ' ' .
+            (string) $this->rhs;
     }
 
     /**
      * Return this whole relation as a valid string of PHP code.
      */
-    public function toPhpString()
-    {
-        $string = (string) $this;
-        // TODO - basically, put '$' in front of any term that isn't a number.
-        // TODO - check first to see if a constant is_defined() for the variable first.
-        return $string;
-    }
+    // public function toPhpString()
+    // {
+    //     $string = (string) $this;
+    //     // TODO - basically, put '$' in front of any term that isn't a number.
+    //     // TODO - check first to see if a constant is_defined() for the variable first.
+    //     return $string;
+    // }
 
     /**
      * Only allow getting the specified properties.
@@ -65,6 +67,9 @@ class Relation
     {
         if (!in_array($name, ['lhs', 'rhs', 'relation'])) {
             throw new \UnexpectedValueException("Value ($name) not available.");
+        }
+        if ($name === 'relation') {
+            return $this->relation_symbols[$this->relation];
         }
         return $this->$name;
     }
