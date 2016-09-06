@@ -30,7 +30,7 @@ class Relation
 
     public function __construct(Expression $lhs, $relation_string, Expression $rhs)
     {
-        if (!in_array($relation_string, $this->relation_symbols)) {
+        if (!in_array($relation_string, $this->relation_symbols, true)) {
             throw new Exception\UnknownRelationOperator([':operator' => $relation_string]);
         }
         $this->relation = array_search($relation_string, $this->relation_symbols);
@@ -65,7 +65,7 @@ class Relation
      */
     public function __get($name)
     {
-        if (!in_array($name, ['lhs', 'rhs', 'relation'])) {
+        if (!in_array($name, ['lhs', 'rhs', 'relation'], true)) {
             throw new \UnexpectedValueException("Value ($name) not available.");
         }
         if ($name === 'relation') {
