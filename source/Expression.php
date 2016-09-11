@@ -12,31 +12,31 @@ namespace CAS;
  */
 class Expression
 {
-    protected $recognized_tokens;
-    protected $token_list;
-    protected $parse_tree;
-
-    public function __construct($expression)
+    /**
+     * Given a string representation of an expression, return an Expression
+     * object that represents it as a parsed data structure.
+     */
+    public static function fromString($expression)
     {
-        $this->recognized_tokens = [
-            new Token('(', Token::TYPE_OPEN_PARENTHESIS),
-            new Token(')', Token::TYPE_CLOSE_PARENTHESIS),
-            new Token('*', Token::TYPE_OPERATOR, 1),
-            new Token('/', Token::TYPE_OPERATOR, 1),
-            new Token('+', Token::TYPE_OPERATOR, 2),
-            new Token('-', Token::TYPE_OPERATOR ,2),
-        ];
-
-        $this->token_list = $this->tokenizeExpression($expression);
-        $this->parse_tree = $this->parseExpression($this->token_list);
+        $token_list = self::tokenizeExpression($expression);
+        return new self($token_list);
     }
 
     /**
      * Given a string expression, break it up into an ordered list of the
      * various Token objects.
      */
-    protected function tokenizeExpression($expression)
+    protected static function tokenizeExpression($expression)
     {
+        $recognized_tokens = [
+            new Token('(', Token::TYPE_OPEN_PARENTHESIS),
+            new Token(')', Token::TYPE_CLOSE_PARENTHESIS),
+            new Token('*', Token::TYPE_OPERATOR, 1),
+            new Token('/', Token::TYPE_OPERATOR, 1),
+            new Token('+', Token::TYPE_OPERATOR, 2),
+            new Token('-', Token::TYPE_OPERATOR, 2),
+        ];
+
         // Remove any spaces in the expression
         $expression = str_replace(' ', '', $expression);
 
@@ -47,7 +47,7 @@ class Expression
         while (strlen($expression) > 0) {
 
             // Test each of the known tokens
-            foreach ($this->recognized_tokens as $token) {
+            foreach ($recognized_tokens as $token) {
 
                 // If this token is currently at the head of the expression
                 if (strpos($expression, $token->string) === 0) {
@@ -89,50 +89,12 @@ class Expression
         return $tokens;
     }
 
-    /**
-     * Given a tokenized expression as a list, parse it into a structured tree
-     * where each element is either an operand Token, or an array with
-     * recursive tree 'lhs' and 'rhs' elements plus an 'operator' Token.
-     */
-    protected function parseExpression(array $token_list)
-    {
-        $this->testBalancedParentheses($token_list);
-
-        $token_list = $this->stripOuterParentheses($token_list);
-
-        // If the token list is empty, let's treat that as a single "" operand
-        // token, for validation purposes.
-        if (count($token_list) === 0) {
-            $token_list[] = new Token('', Token::TYPE_OPERAND);
-        }
-
-        $operator_index = $this->findNextOperator($token_list);
-
-        // If there were no operators identified in the token list, then it
-        // must be a lone operand.
-        if ($operator_index === false) {
-            $this->validateOperand($token_list[0]);
-            return $token_list[0];
-        }
-
-        // Split the token list on the identified operator Token, into a
-        // left-hand side and a right-hand side.  Recurse each side to create
-        // a hierarchical parse tree.
-        $operator = $token_list[$operator_index];
-        $lhs = array_slice($token_list, 0, $operator_index);
-        $rhs = array_slice($token_list, $operator_index + 1);
-        return [
-            'lhs'      => $this->parseExpression($lhs),
-            'operator' => $operator,
-            'rhs'      => $this->parseExpression($rhs),
-        ];
-    }
 
     /**
      * Given a tokenized expression as a list, test whether the parentheses are
      * properly nested and balanced.
      */
-    protected function testBalancedParentheses(array $token_list)
+    protected static function testBalancedParentheses(array $token_list)
     {
         // Step through the tokenized expression from left to right, looking
         // for unbalanced parentheses.
@@ -163,7 +125,7 @@ class Expression
      * Remove any and all matching pairs of parentheses that enclose the entire
      * expression.
      */
-    protected function stripOuterParentheses(array $token_list)
+    protected static function stripOuterParentheses(array $token_list)
     {
         while (count($token_list) > 0 &&
                $token_list[0]->type === TOKEN::TYPE_OPEN_PARENTHESIS &&
@@ -179,7 +141,7 @@ class Expression
      * and skipping over parenthesis blocks.  Return the index of the found
      * operator.  If there's no operator found, return false.
      */
-    protected function findNextOperator(array $token_list)
+    protected static function findSplitOperator(array $token_list)
     {
         $operators = [];
 
@@ -234,7 +196,7 @@ class Expression
      * See php's documentation on variables:
      * http://php.net/manual/en/language.variables.basics.php
      */
-    protected function validateOperand(Token $operand)
+    protected static function validateOperand(Token $operand)
     {
         if (is_numeric($operand->string) ||
             preg_match('/[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/', $operand->string) === 1
@@ -245,9 +207,87 @@ class Expression
         throw new Exception\InvalidOperand([':operand' => $operand->string]);
     }
 
+    /**
+     * Given an operand token, convert it into valid PHP code snippet as a
+     * string.  If the string is a defined constant that begins with 'M_',
+     * we'll allow it on the assumption that it's one of PHP's builtin math
+     * constants.
+     * See http://php.net/manual/en/math.constants.php
+     */
+    protected static function operandAsPHP(Token $operand)
+    {
+        $string = $operand->string;
+        if (is_numeric($string)) {
+            return $string;
+        } elseif (defined($string) && strpos($string, 'M_') === 0) {
+            return $string;
+        }
+        return '$'.$string;
+    }
+
+    /**
+     * can be either an array with 'lhs' and 'rhs' Expression elements, plus a
+     * Token 'operator' element, or it can be a sole Token object representing
+     * an operand.
+     */
+    protected $expression;
+
+    /**
+     * Given a tokenized expression as a list, parse it into a structured tree
+     * where each element is either an operand Token, or another Expression.
+     */
+    public function __construct(array $token_list)
+    {
+        self::testBalancedParentheses($token_list);
+
+        $token_list = self::stripOuterParentheses($token_list);
+
+        // If the token list is now empty, let's treat that as a single ""
+        // operand token, for validation purposes.
+        if (count($token_list) === 0) {
+            $token_list[] = new Token('', Token::TYPE_OPERAND);
+        }
+
+        $operator_index = self::findSplitOperator($token_list);
+
+        if ($operator_index === false) {
+
+            // If there were no operators identified in the token list, then it
+            // must be a lone operand.
+            self::validateOperand($token_list[0]);
+            $this->expression = $token_list[0];
+
+        } else {
+
+            // Otherwise, split the token list on the identified operator Token,
+            // into a left-hand side and a right-hand side Expression.
+            $this->expression = [
+                'lhs'      => new self(array_slice($token_list, 0, $operator_index)),
+                'operator' => $token_list[$operator_index],
+                'rhs'      => new self(array_slice($token_list, $operator_index + 1)),
+            ];
+        }
+    }
+
+    /**
+     * Is this expression a single operand, or is it an infix operator and a pair
+     * of operands?
+     */
+    public function isSingleOperand()
+    {
+        return ($this->expression instanceof Token);
+    }
+
     public function __toString()
     {
-        return $this->getParseTreeAsString($this->parse_tree);
+        if ($this->isSingleOperand()) {
+            return $this->expression->string;
+        }
+        return  '(' .
+            (string) $this->expression['lhs'] .
+            ' ' . $this->expression['operator']->string . ' ' .
+            (string) $this->expression['rhs'] .
+            ')';
     }
 
     /**
@@ -257,49 +297,13 @@ class Expression
      */
     public function toPhpString()
     {
-        return $this->getParseTreeAsString($this->parse_tree, true);
-    }
-
-    /**
-     * Given a parse tree, recursively assemble a string representation, with
-     * explicit parenthesis wrapping each operator and its operands.
-     * Optionally, convert the operands to valid PHP code strings along the way.
-     */
-    protected function getParseTreeAsString($tree, $as_valid_php = false)
-    {
-        // If this is an operand token, just return it as a string
-        if ($tree instanceof Token) {
-            return $as_valid_php ? $this->tokenAsPhp($tree) : $tree->string;
-
-        } else if (is_array($tree) && array_key_exists('lhs', $tree)) {
-            // Otherwise, if the tree has 2 operands and an operator, recurse
-            return '(' .
-                $this->getParseTreeAsString($tree['lhs'], $as_valid_php) .
-                ' ' . $tree['operator']->string . ' ' .
-                $this->getParseTreeAsString($tree['rhs'], $as_valid_php) .
-                ')';
-
-        } else {
-            // Otherwise, it's an empty list, just return an empty string
-            return '';
+        if ($this->isSingleOperand()) {
+            return self::operandAsPHP($this->expression);
         }
-    }
-
-    /**
-     * Given an operand token, convert it into valid PHP code snippet as a
-     * string.  If the string is a defined constant that begins with 'M_',
-     * we'll allow it on the assumption that it's one of PHP's builtin math
-     * constants.
-     * See http://php.net/manual/en/math.constants.php
-     */
-    protected function tokenAsPhp(Token $token)
-    {
-        $string = $token->string;
-        if (is_numeric($string)) {
-            return $string;
-        } elseif (defined($string) && strpos($string, 'M_') === 0) {
-            return $string;
-        }
-        return '$'.$string;
+        return  '(' .
+            $this->expression['lhs']->toPhpString() .
+            ' ' . $this->expression['operator']->string . ' ' .
+            $this->expression['rhs']->toPhpString() .
+            ')';
     }
 }

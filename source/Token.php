@@ -8,7 +8,7 @@ class Token
     const TYPE_OPEN_PARENTHESIS = 2;
     const TYPE_CLOSE_PARENTHESIS = 3;
 
-    protected $types = [
+    const TYPES = [
         self::TYPE_OPERAND,
         self::TYPE_OPERATOR,
         self::TYPE_OPEN_PARENTHESIS,
@@ -21,7 +21,7 @@ class Token
 
     public function __construct($string, $type, $precedence = null)
     {
-        if (!in_array($type, $this->types, true)) {
+        if (!in_array($type, self::TYPES, true)) {
             throw new \UnexpectedValueException("The type ($type) is not valid.");
         }
 

@@ -13,7 +13,7 @@ class ExpressionTest extends TestCase
      */
     public function testExpressionToString($input, $output)
     {
-        $exp = new Expression($input);
+        $exp = Expression::fromString($input);
         $this->assertEquals($output, (string) $exp);
     }
 
@@ -22,7 +22,7 @@ class ExpressionTest extends TestCase
      */
     public function testExpressionToPHPString($input, $output, $eval_output)
     {
-        $exp = new Expression($input);
+        $exp = Expression::fromString($input);
         $string = $exp->toPhpString();
         $this->assertEquals($output, $string);
 
@@ -39,7 +39,7 @@ class ExpressionTest extends TestCase
      */
     public function testUnbalancedParentheses($input)
     {
-        $exp = new Expression($input);
+        $exp = Expression::fromString($input);
     }
 
     /**
@@ -48,7 +48,7 @@ class ExpressionTest extends TestCase
      */
     public function testInvalidOperands($input)
     {
-        $exp = new Expression($input);
+        $exp = Expression::fromString($input);
     }
 
     public function validExpressionProvider()

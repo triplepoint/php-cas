@@ -44,9 +44,9 @@ class Relation
                 $lhs = substr($string, 0, $symbol_pos);
                 $rhs = substr($string, $symbol_pos + strlen($relation_symbol));
                 return new self(
-                    new Expression($lhs),
+                    Expression::fromString($lhs),
                     $relation,
-                    new Expression($rhs)
+                    Expression::fromString($rhs)
                 );
             }
         }

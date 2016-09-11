@@ -13,9 +13,9 @@ class RelationTest extends TestCase
     public function testRelationToString($lhs, $rel, $rhs, $string)
     {
         $relation = new Relation(
-            new Expression($lhs),
+            Expression::fromString($lhs),
             $rel,
-            new Expression($rhs)
+            Expression::fromString($rhs)
         );
 
         $this->assertEquals($string, (string) $relation);
