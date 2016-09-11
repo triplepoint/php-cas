@@ -50,8 +50,7 @@ class Relation
                 );
             }
         }
-        // TODO make this a real exception
-        throw new \Exception("never found a relation operator");
+        throw new Exception\MissingRelationOperator([':string' => $string]);
     }
 
     public function __construct(Expression $lhs, $relation, Expression $rhs)
@@ -60,8 +59,8 @@ class Relation
             throw new Exception\UnknownRelationOperator([':operator' => $relation]);
         }
 
-        $this->relation = $relation;
         $this->lhs = $lhs;
+        $this->relation = $relation;
         $this->rhs = $rhs;
     }
 
