@@ -9,7 +9,7 @@ use CAS\Exception\InvalidOperand;
 class ExpressionTest extends TestCase
 {
     /**
-     * @dataProvider validRelationProvider
+     * @dataProvider validExpressionProvider
      */
     public function testExpressionToString($input, $output)
     {
@@ -18,7 +18,7 @@ class ExpressionTest extends TestCase
     }
 
     /**
-     * @dataProvider validRelationPHPifiedProvider
+     * @dataProvider validExpressionPHPifiedProvider
      */
     public function testExpressionToPHPString($input, $output, $eval_output)
     {
@@ -51,7 +51,7 @@ class ExpressionTest extends TestCase
         $exp = new Expression($input);
     }
 
-    public function validRelationProvider()
+    public function validExpressionProvider()
     {
         return [
             ['1', '1'],
@@ -69,7 +69,7 @@ class ExpressionTest extends TestCase
         ];
     }
 
-    public function validRelationPHPifiedProvider()
+    public function validExpressionPHPifiedProvider()
     {
         // Assume all the variables are 2, we'll handle setting that in the test above
         // $thingy=$thingy_thangy=$M_NOT_A_CONSTANT=$PHP_VERSION=$a=$b=$c=$d=$e=$f=$g=$h=$x=2;

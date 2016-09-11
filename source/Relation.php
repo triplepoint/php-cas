@@ -16,49 +16,61 @@ class Relation
     const RELATION_GREATER_THAN = 3;
     const RELATION_GREATER_THAN_EQUALS = 4;
 
-    protected $relation_symbols = [
+    // We'll put the "or equals to" symbols at the front of the list, to give
+    // them a chance to be parsed before the '=' sign.  This lets us avoid
+    // real tokenization and parsing.
+    const RELATION_SYMBOLS = [
+        Relation::RELATION_LESS_THAN_EQUALS     => '<=',
+        Relation::RELATION_GREATER_THAN_EQUALS  => '>=',
         Relation::RELATION_EQUALS               => '=',
         Relation::RELATION_LESS_THAN            => '<',
-        Relation::RELATION_LESS_THAN_EQUALS     => '<=',
         Relation::RELATION_GREATER_THAN         => '>',
-        Relation::RELATION_GREATER_THAN_EQUALS  => '>=',
     ];
 
     protected $lhs;
     protected $rhs;
     protected $relation;
 
-    public function __construct(Expression $lhs, $relation_string, Expression $rhs)
+    /**
+     * Given a string representation of a relation (2 expressions separated by
+     * a relation operator), build a new Relation and return it.
+     * Throws an exception if no relation operator is found.
+     */
+    public static function fromString($string)
     {
-        if (!in_array($relation_string, $this->relation_symbols, true)) {
-            throw new Exception\UnknownRelationOperator([':operator' => $relation_string]);
+        foreach (self::RELATION_SYMBOLS as $relation => $relation_symbol) {
+            $symbol_pos = strpos($string, $relation_symbol);
+            if ($symbol_pos !== false) {
+                $lhs = substr($string, 0, $symbol_pos);
+                $rhs = substr($string, $symbol_pos + strlen($relation_symbol));
+                return new self(
+                    new Expression($lhs),
+                    $relation,
+                    new Expression($rhs)
+                );
+            }
         }
-        $this->relation = array_search($relation_string, $this->relation_symbols);
+        // TODO make this a real exception
+        throw new \Exception("never found a relation operator");
+    }
 
+    public function __construct(Expression $lhs, $relation, Expression $rhs)
+    {
+        if (!array_key_exists($relation, self::RELATION_SYMBOLS)) {
+            throw new Exception\UnknownRelationOperator([':operator' => $relation]);
+        }
+
+        $this->relation = $relation;
         $this->lhs = $lhs;
         $this->rhs = $rhs;
     }
 
-    /**
-     * return a string form of the whole relation.
-     */
     public function __toString()
     {
         return (string) $this->lhs .
-            ' '. $this->relation_symbols[$this->relation] . ' ' .
-            (string) $this->rhs;
+               ' '. self::RELATION_SYMBOLS[$this->relation] . ' ' .
+               (string) $this->rhs;
     }
-
-    /**
-     * Return this whole relation as a valid string of PHP code.
-     */
-    // public function toPhpString()
-    // {
-    //     $string = (string) $this;
-    //     // TODO - basically, put '$' in front of any term that isn't a number.
-    //     // TODO - check first to see if a constant is_defined() for the variable first.
-    //     return $string;
-    // }
 
     /**
      * Only allow getting the specified properties.
@@ -67,9 +79,6 @@ class Relation
     {
         if (!in_array($name, ['lhs', 'rhs', 'relation'], true)) {
             throw new \UnexpectedValueException("Value ($name) not available.");
-        }
-        if ($name === 'relation') {
-            return $this->relation_symbols[$this->relation];
         }
         return $this->$name;
     }

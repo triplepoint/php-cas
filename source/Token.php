@@ -26,7 +26,7 @@ class Token
         }
 
         if (!is_integer($precedence) && !is_null($precedence)) {
-            throw new \UnexpectedValueException("The precedecne ($precedence) must be null or an integer.");
+            throw new \UnexpectedValueException("The precedence ($precedence) must be null or an integer.");
         }
 
         $this->string = $string;

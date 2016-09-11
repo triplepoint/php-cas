@@ -12,52 +12,54 @@ class DemonstrationTest extends TestCase
     /**
      * @dataProvider validRelationProvider
      */
-    public function testsolveForVariable($lhs, $rel, $rhs, $solve_for, $res_rel, $res_rhs)
+    public function testsolveForVariable($relation_str, $solve_for, $solved_relation)
     {
-        $relation = new Relation(
-            new Expression($lhs),
-            $rel,
-            new Expression($rhs)
-        );
+        $relation = Relation::fromString($relation_str);
+
         $solver = new RelationSolver($relation);
 
         $res_relation = $solver->solveFor($solve_for);
 
-        $this->assertInstanceOf(Relation::class, $res_relation);
-
         $this->assertEquals($solve_for, (string) $res_relation->lhs);
-        $this->assertEquals($res_rel, (string) $res_relation->relation);
-        $this->assertEquals($res_rhs, (string) $res_relation->rhs);
+
+        $this->assertEquals($solved_relation, (string) $res_relation);
     }
 
     /**
+     * @dataProvider invalidSolveForVariableProvider
      * @expectedException \CAS\Exception\UnknownVariable
      */
-    public function testsolveForUnknownVariableThrowsException()
+    public function testsolveForUnknownVariableThrowsException($relation, $solve_for)
     {
-        $relation = new Relation(
-            new Expression('(373.15 - x) * 3/2'),
-            '=',
-            new Expression('0')
-        );
+        $relation = Relation::fromString($relation);
         $solver = new RelationSolver($relation);
-
-        $x_exp = $solver->solveFor('y');
+        $x_exp = $solver->solveFor($solve_for);
     }
 
     public function validRelationProvider()
     {
         return [
-            ['x', '=', '2', 'x', '=', '2'],
-            ['x', '=', '2 * y', 'x', '=', '(2 * y)'],
-            ['x', '=', '2 * y', 'y', '=', '(x / 2)'],
-            ['x', '=', '2 + y', 'y', '=', '(2 - x)'],
-            ['(373.15 - x) * 3/2', '=', '12', 'x', '=', '373.15 - ((12 / 3) * 2)'],
-            ['(373.15 - x) * 3/2', '=', 'y',  'x', '=', '373.15 - ((y / 3) * 2)'],
+            ['x = 2',                   'x', 'x = 2'],
+            ['2 = x',                   'x', 'x = 2'],
+            ['x = 2 * y',               'x', 'x = (2 * y)'],
+            ['2 * y = x',               'x', 'x = (2 * y)'],
+            ['x = 2 * y',               'y', 'y = (x / 2)'],
+            ['x = 2 + y',               'y', 'y = (x - 2)'],
+            ['(373.15 - x) * 3/2 = 12', 'x', 'x = 373.15 - ((12 / 3) * 2)'],
+            ['(373.15 - x) * 3/2 = y',  'x', 'x = 373.15 - ((y / 3) * 2)'],
 
             // I should check my logic on inequalities, I can't remember how the "or equals to" bits work
-            // ['(373.15 - x) * 3/2', '<', 'y',  'x', '>', '373.15 - ((12 / 3) * 2)'],
-            // ['(373.15 - x) * 3/2', '>', 'y',  'x', '<', '373.15 - ((12 / 3) * 2)'],
+            // ['(373.15 - x) * 3/2 < y',  'x', 'x > 373.15 - ((12 / 3) * 2)'],
+            // ['(373.15 - x) * 3/2 > y',  'x', 'x > 373.15 - ((12 / 3) * 2)'],
+        ];
+    }
+
+    public function invalidSolveForVariableProvider()
+    {
+        // All of these should throw an unknown variable exception
+        return [
+            ['(373.15 - x) * 3/2 = 0', 'y'],
+            ['(373.15 - x) * 3/2 = 0', '3'],
         ];
     }
 }

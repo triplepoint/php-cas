@@ -34,7 +34,7 @@ class TokenTest extends TestCase
         $token = new Token($string, $type, $precedence);
     }
 
-    public function testSetsExcept()
+    public function testSetsThrowExceptions()
     {
         $token = new Token('test', Token::TYPE_OPERAND, 2);
 
