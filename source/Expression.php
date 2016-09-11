@@ -12,13 +12,13 @@ namespace CAS;
  */
 class Expression
 {
-    protected $defined_tokens;
+    protected $recognized_tokens;
     protected $token_list;
     protected $parse_tree;
 
     public function __construct($expression)
     {
-        $this->defined_tokens = [
+        $this->recognized_tokens = [
             new Token('(', Token::TYPE_OPEN_PARENTHESIS),
             new Token(')', Token::TYPE_CLOSE_PARENTHESIS),
             new Token('*', Token::TYPE_OPERATOR, 1),
@@ -46,8 +46,8 @@ class Expression
         // As long as there's still some expression string left to parse
         while (strlen($expression) > 0) {
 
-            // Test each of the defined tokens
-            foreach ($this->defined_tokens as $token) {
+            // Test each of the known tokens
+            foreach ($this->recognized_tokens as $token) {
 
                 // If this token is currently at the head of the expression
                 if (strpos($expression, $token->string) === 0) {
@@ -65,19 +65,21 @@ class Expression
                     // expression string
                     $expression = substr($expression, strlen($token->string));
 
-                    // Start over with what's left of the expression string
+                    // Skip the rest of this foreach loop and also skip the rest
+                    // of the while loop, and start over.
                     continue 2;
                 }
             }
 
             // If no tokens were identified at the head of the expression,
-            // shift another character into the buffer and try again.
+            // shift another character off the expression string and into the
+            // buffer and try again.
             $shift_buffer .= $expression[0];
             $expression = substr($expression, 1);
         }
 
-        // Now that we're done with the expression string, if there's anything
-        // still stored in the buffer, write it as a new token
+        // Now that we're done parsing the expression string, if there's
+        // anything still stored in the buffer, add it as a new token
         if ($shift_buffer !== '') {
             $tokens[] = new Token($shift_buffer, Token::TYPE_OPERAND);
             $shift_buffer = '';
@@ -98,21 +100,24 @@ class Expression
 
         $token_list = $this->stripOuterParentheses($token_list);
 
-        // If the token list is empty, let's treat that as a single "" token,
-        // for parsing and validation purposes.
-        if ($token_list === []) {
-            $token_list = [
-                new Token('', Token::TYPE_OPERAND)
-            ];
+        // If the token list is empty, let's treat that as a single "" operand
+        // token, for validation purposes.
+        if (count($token_list) === 0) {
+            $token_list[] = new Token('', Token::TYPE_OPERAND);
         }
 
         $operator_index = $this->findNextOperator($token_list);
 
+        // If there were no operators identified in the token list, then it
+        // must be a lone operand.
         if ($operator_index === false) {
-            $this->testOperandForCorrectness($token_list[0]);
+            $this->validateOperand($token_list[0]);
             return $token_list[0];
         }
 
+        // Split the token list on the identified operator Token, into a
+        // left-hand side and a right-hand side.  Recurse each side to create
+        // a hierarchical parse tree.
         $operator = $token_list[$operator_index];
         $lhs = array_slice($token_list, 0, $operator_index);
         $rhs = array_slice($token_list, $operator_index + 1);
@@ -129,6 +134,8 @@ class Expression
      */
     protected function testBalancedParentheses(array $token_list)
     {
+        // Step through the tokenized expression from left to right, looking
+        // for unbalanced parentheses.
         $paren_count = 0;
         foreach ($token_list as $token) {
 
@@ -145,7 +152,8 @@ class Expression
             }
         }
 
-        // if there's still any unclosed parentheses, that's an error
+        // Now that we're done, if there's still any unclosed parentheses,
+        // that's also an error
         if ($paren_count !== 0) {
             throw new Exception\UnbalancedParentheses([':expression' => print_r($token_list, true)]);
         }
@@ -157,7 +165,7 @@ class Expression
      */
     protected function stripOuterParentheses(array $token_list)
     {
-        while (count($token_list) >= 2 &&
+        while (count($token_list) > 0 &&
                $token_list[0]->type === TOKEN::TYPE_OPEN_PARENTHESIS &&
                $token_list[count($token_list) - 1]->type === TOKEN::TYPE_CLOSE_PARENTHESIS
         ) {
@@ -203,7 +211,7 @@ class Expression
         }
 
         // If there were no operators in the expression, return false
-        if ($operators === []) {
+        if (count($operators) === 0) {
             return false;
         }
 
@@ -226,11 +234,11 @@ class Expression
      * See php's documentation on variables:
      * http://php.net/manual/en/language.variables.basics.php
      */
-    protected function testOperandForCorrectness(Token $operand)
+    protected function validateOperand(Token $operand)
     {
-        if (is_numeric($operand->string)) {
-            return;
-        } elseif (preg_match('/[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/', $operand->string) === 1) {
+        if (is_numeric($operand->string) ||
+            preg_match('/[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/', $operand->string) === 1
+        ) {
             return;
         }
 
@@ -242,19 +250,34 @@ class Expression
         return $this->getParseTreeAsString($this->parse_tree);
     }
 
-    protected function getParseTreeAsString($tree)
+    /**
+     * Return this expression as a valid string of PHP code.
+     * This just involves turning variables into $variables, while watching out
+     * for PHP constants.
+     */
+    public function toPhpString()
     {
-        // if the tree is a subtree
-        if (array_key_exists('lhs', $tree)) {
-            return '(' .
-                $this->getParseTreeAsString($tree['lhs']) .
-                ' ' . $tree['operator']->string . ' ' .
-                $this->getParseTreeAsString($tree['rhs']) .
-                ')';
+        return $this->getParseTreeAsString($this->parse_tree, true);
+    }
 
-        } elseif ($tree !== []) {
-            // Otherwise if this is a operand Token, just return it as a string
-            return $tree->string;
+    /**
+     * Given a parse tree, recursively assemble a string representation, with
+     * explicit parenthesis wrapping each operator and its operands.
+     * Optionally, convert the operands to valid PHP code strings along the way.
+     */
+    protected function getParseTreeAsString($tree, $as_valid_php = false)
+    {
+        // If this is an operand token, just return it as a string
+        if ($tree instanceof Token) {
+            return $as_valid_php ? $this->tokenAsPhp($tree) : $tree->string;
+
+        } else if (is_array($tree) && array_key_exists('lhs', $tree)) {
+            // Otherwise, if the tree has 2 operands and an operator, recurse
+            return '(' .
+                $this->getParseTreeAsString($tree['lhs'], $as_valid_php) .
+                ' ' . $tree['operator']->string . ' ' .
+                $this->getParseTreeAsString($tree['rhs'], $as_valid_php) .
+                ')';
 
         } else {
             // Otherwise, it's an empty list, just return an empty string
@@ -263,13 +286,20 @@ class Expression
     }
 
     /**
-     * Return this expression as a valid string of PHP code.
+     * Given an operand token, convert it into valid PHP code snippet as a
+     * string.  If the string is a defined constant that begins with 'M_',
+     * we'll allow it on the assumption that it's one of PHP's builtin math
+     * constants.
+     * See http://php.net/manual/en/math.constants.php
      */
-    // public function toPhpString()
-    // {
-    //     $string = (string) $this;
-    //     // TODO - basically, put '$' in front of any term that isn't a number.
-    //     // TODO - check first to see if a constant is_defined() for the variable first.
-    //     return $string;
-    // }
+    protected function tokenAsPhp(Token $token)
+    {
+        $string = $token->string;
+        if (is_numeric($string)) {
+            return $string;
+        } elseif (defined($string) && strpos($string, 'M_') === 0) {
+            return $string;
+        }
+        return '$'.$string;
+    }
 }
