@@ -27,10 +27,6 @@ class Relation
         Relation::RELATION_GREATER_THAN         => '>',
     ];
 
-    protected $lhs;
-    protected $rhs;
-    protected $relation;
-
     /**
      * Given a string representation of a relation (2 expressions separated by
      * a relation operator), build a new Relation and return it.
@@ -41,17 +37,19 @@ class Relation
         foreach (self::RELATION_SYMBOLS as $relation => $relation_symbol) {
             $symbol_pos = strpos($string, $relation_symbol);
             if ($symbol_pos !== false) {
-                $lhs = substr($string, 0, $symbol_pos);
-                $rhs = substr($string, $symbol_pos + strlen($relation_symbol));
                 return new self(
-                    Expression::fromString($lhs),
+                    Expression::fromString(substr($string, 0, $symbol_pos)),
                     $relation,
-                    Expression::fromString($rhs)
+                    Expression::fromString(substr($string, $symbol_pos + strlen($relation_symbol)))
                 );
             }
         }
         throw new Exception\MissingRelationOperator([':string' => $string]);
     }
+
+    protected $lhs;
+    protected $rhs;
+    protected $relation;
 
     public function __construct(Expression $lhs, $relation, Expression $rhs)
     {
