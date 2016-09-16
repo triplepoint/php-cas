@@ -40,19 +40,19 @@ class Relation
 
     protected $lhs;
     protected $rhs;
-    protected $relation;
+    protected $operator;
 
-    public function __construct(Expression $lhs, $relation, Expression $rhs)
+    public function __construct(Expression $lhs, $operator, Expression $rhs)
     {
         $this->lhs = $lhs;
-        $this->relation = $relation;
+        $this->operator = $operator;
         $this->rhs = $rhs;
     }
 
     public function __toString()
     {
         return (string) $this->lhs .
-               ' '. $this->relation->string . ' ' .
+               ' '. $this->operator->string . ' ' .
                (string) $this->rhs;
     }
 
@@ -61,7 +61,7 @@ class Relation
      */
     public function __get($name)
     {
-        if (!in_array($name, ['lhs', 'rhs', 'relation'], true)) {
+        if (!in_array($name, ['lhs', 'rhs', 'operator'], true)) {
             throw new \UnexpectedValueException("Value ($name) not available.");
         }
         return $this->$name;
