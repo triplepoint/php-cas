@@ -18,16 +18,6 @@ class Expression
      */
     public static function fromString($expression)
     {
-        $token_list = self::tokenizeExpression($expression);
-        return new self($token_list);
-    }
-
-    /**
-     * Given a string expression, break it up into an ordered list of the
-     * various Token objects.
-     */
-    protected static function tokenizeExpression($expression)
-    {
         $recognized_tokens = [
             new Token('(', Token::TYPE_OPEN_PARENTHESIS),
             new Token(')', Token::TYPE_CLOSE_PARENTHESIS),
@@ -37,58 +27,9 @@ class Expression
             new Token('-', Token::TYPE_OPERATOR, 2),
         ];
 
-        // Remove any spaces in the expression
-        $expression = str_replace(' ', '', $expression);
-
-        $tokens = [];
-        $shift_buffer = '';
-
-        // As long as there's still some expression string left to parse
-        while (strlen($expression) > 0) {
-
-            // Test each of the known tokens
-            foreach ($recognized_tokens as $token) {
-
-                // If this token is currently at the head of the expression
-                if (strpos($expression, $token->string) === 0) {
-
-                    // Save any buffered content as a new token
-                    if ($shift_buffer !== '') {
-                        $tokens[] = new Token($shift_buffer, Token::TYPE_OPERAND);
-                        $shift_buffer = '';
-                    }
-
-                    // Add the identified token as a new token
-                    $tokens[] = $token;
-
-                    // Remove the identified token from the head of the
-                    // expression string
-                    $expression = substr($expression, strlen($token->string));
-
-                    // Skip the rest of this foreach loop and also skip the rest
-                    // of the while loop, and start over.
-                    continue 2;
-                }
-            }
-
-            // If no tokens were identified at the head of the expression,
-            // shift another character off the expression string and into the
-            // buffer and try again.
-            $shift_buffer .= $expression[0];
-            $expression = substr($expression, 1);
-        }
-
-        // Now that we're done parsing the expression string, if there's
-        // anything still stored in the buffer, add it as a new token
-        if ($shift_buffer !== '') {
-            $tokens[] = new Token($shift_buffer, Token::TYPE_OPERAND);
-            $shift_buffer = '';
-        }
-
-        // Return the parsed set of tokens
-        return $tokens;
+        $token_list = Tokenizer::tokenizeExpression($expression, $recognized_tokens);
+        return new self($token_list);
     }
-
 
     /**
      * Given a tokenized expression as a list, test whether the parentheses are
