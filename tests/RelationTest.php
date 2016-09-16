@@ -4,6 +4,7 @@ namespace CASTest;
 use PHPUnit\Framework\TestCase;
 use CAS\Relation;
 use CAS\Expression;
+use CAS\Token;
 
 class RelationTest extends TestCase
 {
@@ -34,10 +35,11 @@ class RelationTest extends TestCase
     public function validRelationProvider()
     {
         return [
-            ['x', RELATION::RELATION_EQUALS, '12', 'x = 12'],
-            ['1', RELATION::RELATION_EQUALS, '2', '1 = 2'], // Even though it's not true, this relation can still be expressed.
-            ['x+12', RELATION::RELATION_EQUALS, 'y-75', '(x + 12) = (y - 75)'],
-            ['z', RELATION::RELATION_LESS_THAN_EQUALS, '2', 'z <= 2'],
+            ['x',    new Token('=', TOKEN::TYPE_RELATION),  '12',   'x = 12'],
+            ['1',    new Token('=', TOKEN::TYPE_RELATION),  '2',    '1 = 2'], // Even though it's not true, this relation can still be expressed.
+            ['x+12', new Token('=', TOKEN::TYPE_RELATION),  'y-75', '(x + 12) = (y - 75)'],
+            ['z',    new Token('<=', TOKEN::TYPE_RELATION), '2',    'z <= 2'],
+            ['z',    new Token('>', TOKEN::TYPE_RELATION), '2',    'z > 2'],
         ];
     }
 }

@@ -10,41 +10,32 @@ namespace CAS;
  */
 class Relation
 {
-    const RELATION_EQUALS = 0;
-    const RELATION_LESS_THAN = 1;
-    const RELATION_LESS_THAN_EQUALS = 2;
-    const RELATION_GREATER_THAN = 3;
-    const RELATION_GREATER_THAN_EQUALS = 4;
-
-    // We'll put the "or equals to" symbols at the front of the list, to give
-    // them a chance to be parsed before the '=' sign.  This lets us avoid
-    // real tokenization and parsing.
-    const RELATION_SYMBOLS = [
-        Relation::RELATION_LESS_THAN_EQUALS     => '<=',
-        Relation::RELATION_GREATER_THAN_EQUALS  => '>=',
-        Relation::RELATION_EQUALS               => '=',
-        Relation::RELATION_LESS_THAN            => '<',
-        Relation::RELATION_GREATER_THAN         => '>',
-    ];
-
     /**
      * Given a string representation of a relation (2 expressions separated by
      * a relation operator), build a new Relation and return it.
      * Throws an exception if no relation operator is found.
      */
-    public static function fromString($string)
+    public static function fromString($relation)
     {
-        foreach (self::RELATION_SYMBOLS as $relation => $relation_symbol) {
-            $symbol_pos = strpos($string, $relation_symbol);
-            if ($symbol_pos !== false) {
-                return new self(
-                    Expression::fromString(substr($string, 0, $symbol_pos)),
-                    $relation,
-                    Expression::fromString(substr($string, $symbol_pos + strlen($relation_symbol)))
-                );
-            }
+        $recognized_tokens = [
+            new Token('=', Token::TYPE_RELATION),
+            new Token('<', Token::TYPE_RELATION),
+            new Token('<=', Token::TYPE_RELATION),
+            new Token('>', Token::TYPE_RELATION),
+            new Token('>=', Token::TYPE_RELATION),
+        ];
+
+        $token_list = Tokenizer::tokenizeExpression($relation, $recognized_tokens);
+
+        if (count($token_list) !== 3) {
+            throw new Exception\WrongCountRelationOperators([':string' => $relation]);
         }
-        throw new Exception\MissingRelationOperator([':string' => $string]);
+
+        return new self(
+            Expression::fromString($token_list[0]->string),
+            $token_list[1],
+            Expression::fromString($token_list[2]->string)
+        );
     }
 
     protected $lhs;
@@ -53,10 +44,6 @@ class Relation
 
     public function __construct(Expression $lhs, $relation, Expression $rhs)
     {
-        if (!array_key_exists($relation, self::RELATION_SYMBOLS)) {
-            throw new Exception\UnknownRelationOperator([':operator' => $relation]);
-        }
-
         $this->lhs = $lhs;
         $this->relation = $relation;
         $this->rhs = $rhs;
@@ -65,7 +52,7 @@ class Relation
     public function __toString()
     {
         return (string) $this->lhs .
-               ' '. self::RELATION_SYMBOLS[$this->relation] . ' ' .
+               ' '. $this->relation->string . ' ' .
                (string) $this->rhs;
     }
 

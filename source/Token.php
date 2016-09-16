@@ -7,12 +7,14 @@ class Token
     const TYPE_OPERATOR = 1;
     const TYPE_OPEN_PARENTHESIS = 2;
     const TYPE_CLOSE_PARENTHESIS = 3;
+    const TYPE_RELATION = 4;
 
     const TYPES = [
         self::TYPE_OPERAND,
         self::TYPE_OPERATOR,
         self::TYPE_OPEN_PARENTHESIS,
         self::TYPE_CLOSE_PARENTHESIS,
+        self::TYPE_RELATION,
     ];
 
     protected $string;
