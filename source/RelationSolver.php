@@ -16,9 +16,9 @@ class RelationSolver
         // polynomial (don't worry about reducing like terms).  If it looks like a higher order
         // polynomial, throw an exception (for now).: expandExpression()
         $new_relation = new Relation(
-            $this->expandExpression($this->relation->lhs),
+            $this->relation->lhs->expand(),
             $this->relation->operator,
-            $this->expandExpression($this->relation->rhs)
+            $this->relation->rhs->expand()
         );
 
         // 2 - Move all the terms with the target variable in them to the left hand
@@ -27,7 +27,7 @@ class RelationSolver
 
         // 3 - factor out the target variable on the left hand side: factorExpressionFor('x')
         $new_relation = new Relation(
-            $this->factorExpressionFor($new_relation->lhs, $variable),
+            $new_relation->lhs->factorFor($variable),
             $new_relation->operator,
             $new_relation->rhs
         );
@@ -43,23 +43,5 @@ class RelationSolver
         // x = ((6 * y) - (z * 4)) / (z - 5)       // 4)
 
         return $new_relation;
-    }
-
-    public function expandExpression(Expression $expression)
-    {
-        return $expression;
-
-        // Take something like:
-        //  "2 * x * (4 + y)"     =>   "((2 * x) * 4) + ((2 * x) * y)"
-    }
-
-    public function factorExpressionFor(Expression $expression, $variable)
-    {
-        return $expression;
-
-        // Take something like:
-        //  "(z * x)"                        =>   "(z * x)"
-        //  "(z * x) - (5 * x)"              =>   "(x * (z - 5))"
-        //  "((2 * x) * 4) + ((2 * x) * y)"  =>   "(x * ((2 * 4) + (2 * y))"
     }
 }

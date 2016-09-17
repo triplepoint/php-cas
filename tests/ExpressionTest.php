@@ -108,4 +108,40 @@ class ExpressionTest extends TestCase
         ];
     }
 
+    /**
+     * @dataProvider expandProvider
+     */
+    public function testExpand($input, $result)
+    {
+        $exp = Expression::fromString($input);
+        $this->assertEquals($result, (string) $exp->expand());
+    }
+
+    public function expandProvider()
+    {
+        return [
+            ['x+12', 'x + 12'],
+            ['2 * x * (4 + y)', '((2 * x) * 4) + ((2 * x) * y)'],
+        ];
+    }
+
+    /**
+     * @dataProvider factorForProvider
+     */
+    public function testFactorFor($input, $variable, $result)
+    {
+        $exp = Expression::fromString($input);
+        $this->assertEquals($result, (string) $exp->factorFor($variable));
+    }
+
+    public function factorForProvider()
+    {
+        return [
+            ['x+12', 'x', 'x + 12'],
+            ['(z * x)', 'x', '(z * x)'],
+            ['(z * x) - (5 * x)', 'x', '(x * (z - 5))'],
+            ['((2 * x) * 4) + ((2 * x) * y)', 'x', '(x * ((2 * 4) + (2 * y))'],
+        ];
+    }
+
 }

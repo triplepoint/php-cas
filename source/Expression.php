@@ -225,6 +225,16 @@ class Expression
         return ($this->expression instanceof Token);
     }
 
+    public function expand()
+    {
+        return $this;
+    }
+
+    public function factorFor($variable)
+    {
+        return $this;
+    }
+
     public function __toString()
     {
         if ($this->isSingleOperand()) {
