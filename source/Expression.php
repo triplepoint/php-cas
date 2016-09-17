@@ -72,7 +72,13 @@ class Expression
                $token_list[0]->type === TOKEN::TYPE_OPEN_PARENTHESIS &&
                $token_list[count($token_list) - 1]->type === TOKEN::TYPE_CLOSE_PARENTHESIS
         ) {
-            $token_list = array_slice($token_list, 1, -1);
+            try {
+                $new_token_list = array_slice($token_list, 1, -1);
+                self::testBalancedParentheses($new_token_list);
+                $token_list = $new_token_list;
+            } catch (Exception\UnbalancedParentheses $e) {
+                return $token_list;
+            }
         }
         return $token_list;
     }

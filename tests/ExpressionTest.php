@@ -62,6 +62,7 @@ class ExpressionTest extends TestCase
             ['    thingy     ', 'thingy'],
             ['thingy_thangy', 'thingy_thangy'],
             ['((((((x))))))', 'x'],
+            ['(x + y) + (x - y)', '(x + y) + (x - y)'],
             ['1+2', '(1 + 2)'],
             ['1+2-3/4*5/6-7+8', '((((1 + 2) - (((3 / 4) * 5) / 6)) - 7) + 8)'],  // = 27/8
             ['a+b-c/d*e/f-g+h', '((((a + b) - (((c / d) * e) / f)) - g) + h)'],
