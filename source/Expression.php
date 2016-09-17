@@ -27,7 +27,7 @@ class Expression
             new Token('-', Token::TYPE_OPERATOR, 2),
         ];
 
-        $token_list = Tokenizer::tokenizeExpression($expression, $recognized_tokens);
+        $token_list = Tokenizer::tokenize($expression, $recognized_tokens);
         return new self($token_list);
     }
 

@@ -17,40 +17,6 @@ class ExpressionTest extends TestCase
         $this->assertEquals($output, (string) $exp);
     }
 
-    /**
-     * @dataProvider validExpressionPHPifiedProvider
-     */
-    public function testExpressionToPHPString($input, $output, $eval_output)
-    {
-        $exp = Expression::fromString($input);
-        $string = $exp->toPhpString();
-        $this->assertEquals($output, $string);
-
-        // see the provider for the explanation here
-        $thingy=$thingy_thangy=$M_NOT_A_CONSTANT=$PHP_VERSION=$a=$b=$c=$d=$e=$f=$g=$h=$x=2;
-
-        eval("\$eval_result = {$string};\n");
-        $this->assertEquals($eval_output, $eval_result);
-    }
-
-    /**
-     * @dataProvider unbalancedParenthesesProvider
-     * @expectedException \CAS\Exception\UnbalancedParentheses
-     */
-    public function testUnbalancedParentheses($input)
-    {
-        $exp = Expression::fromString($input);
-    }
-
-    /**
-     * @dataProvider invalidOperandProvider
-     * @expectedException \CAS\Exception\InvalidOperand
-     */
-    public function testInvalidOperands($input)
-    {
-        $exp = Expression::fromString($input);
-    }
-
     public function validExpressionProvider()
     {
         return [
@@ -70,6 +36,22 @@ class ExpressionTest extends TestCase
         ];
     }
 
+    /**
+     * @dataProvider validExpressionPHPifiedProvider
+     */
+    public function testExpressionToPHPString($input, $output, $eval_output)
+    {
+        $exp = Expression::fromString($input);
+        $string = $exp->toPhpString();
+        $this->assertEquals($output, $string);
+
+        // see the provider for the explanation here
+        $thingy=$thingy_thangy=$M_NOT_A_CONSTANT=$PHP_VERSION=$a=$b=$c=$d=$e=$f=$g=$h=$x=2;
+
+        eval("\$eval_result = {$string};\n");
+        $this->assertEquals($eval_output, $eval_result);
+    }
+
     public function validExpressionPHPifiedProvider()
     {
         // Assume all the variables are 2, we'll handle setting that in the test above
@@ -87,6 +69,15 @@ class ExpressionTest extends TestCase
         ];
     }
 
+    /**
+     * @dataProvider unbalancedParenthesesProvider
+     * @expectedException \CAS\Exception\UnbalancedParentheses
+     */
+    public function testUnbalancedParentheses($input)
+    {
+        $exp = Expression::fromString($input);
+    }
+
     public function unbalancedParenthesesProvider()
     {
         return [
@@ -97,6 +88,15 @@ class ExpressionTest extends TestCase
             [')x+1('],
             ['))x+1(('],
         ];
+    }
+
+    /**
+     * @dataProvider invalidOperandProvider
+     * @expectedException \CAS\Exception\InvalidOperand
+     */
+    public function testInvalidOperands($input)
+    {
+        $exp = Expression::fromString($input);
     }
 
     public function invalidOperandProvider()

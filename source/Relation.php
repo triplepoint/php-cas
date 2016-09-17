@@ -25,7 +25,7 @@ class Relation
             new Token('>=', Token::TYPE_RELATION),
         ];
 
-        $token_list = Tokenizer::tokenizeExpression($relation, $recognized_tokens);
+        $token_list = Tokenizer::tokenize($relation, $recognized_tokens);
 
         if (count($token_list) !== 3) {
             throw new Exception\WrongCountRelationOperators([':string' => $relation]);
