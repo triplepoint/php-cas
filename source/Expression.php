@@ -233,6 +233,7 @@ class Expression
     public function factorFor($variable)
     {
         return $this;
+        // probably expand() to start with, then gather variables
     }
 
     public function __toString()

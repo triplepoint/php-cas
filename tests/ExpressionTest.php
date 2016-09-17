@@ -28,7 +28,7 @@ class ExpressionTest extends TestCase
             ['    thingy     ', 'thingy'],
             ['thingy_thangy', 'thingy_thangy'],
             ['((((((x))))))', 'x'],
-            ['(x + y) + (x - y)', '(x + y) + (x - y)'],
+            ['(x + y) + (x - y)', '((x + y) + (x - y))'],
             ['1+2', '(1 + 2)'],
             ['1+2-3/4*5/6-7+8', '((((1 + 2) - (((3 / 4) * 5) / 6)) - 7) + 8)'],  // = 27/8
             ['a+b-c/d*e/f-g+h', '((((a + b) - (((c / d) * e) / f)) - g) + h)'],
@@ -120,8 +120,11 @@ class ExpressionTest extends TestCase
     public function expandProvider()
     {
         return [
-            ['x+12', 'x + 12'],
-            ['2 * x * (4 + y)', '((2 * x) * 4) + ((2 * x) * y)'],
+            ['x + 12', '(x + 12)'],
+            ['x * (y + z)', '((x * y) + (x * z))'],
+            ['a * x * (y + z)', '((a * x * y) + (a * x * z))'],
+            ['(a + x) * (y + z)', '((a * y) + (a * z) + (x * y) + (x * z))'],
+            ['(a + x) * (b + y + z)', '((x * b) + (x * y) + (x * z) + (a * b) + (a * y) + (a * z))'],
         ];
     }
 
@@ -137,10 +140,10 @@ class ExpressionTest extends TestCase
     public function factorForProvider()
     {
         return [
-            ['x+12', 'x', 'x + 12'],
-            ['(z * x)', 'x', '(z * x)'],
-            ['(z * x) - (5 * x)', 'x', '(x * (z - 5))'],
-            ['((2 * x) * 4) + ((2 * x) * y)', 'x', '(x * ((2 * 4) + (2 * y))'],
+            ['x * a', 'x', '(x * a)'],
+            ['x + a', 'x', '(x + a)'],
+            ['(x * a) - (x * b)', 'x', '(x * (a - b))'],
+            ['((x + a) * b) + ((x + c) * d)', 'x', '((x * (b + d)) + (b * a) + (d * c))'],
         ];
     }
 
