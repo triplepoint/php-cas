@@ -51,14 +51,14 @@ class Expression
 
             // If we've closed more than we've opened, that's an error
             if ($paren_count < 0) {
-                throw new Exception\UnbalancedParentheses([':expression' => print_r($token_list, true)]);
+                throw new Exception\UnbalancedParentheses([':expression' => Tokenizer::stringifyTokenList($token_list)]);
             }
         }
 
         // Now that we're done, if there's still any unclosed parentheses,
         // that's also an error
         if ($paren_count !== 0) {
-            throw new Exception\UnbalancedParentheses([':expression' => print_r($token_list, true)]);
+            throw new Exception\UnbalancedParentheses([':expression' => Tokenizer::stringifyTokenList($token_list)]);
         }
     }
 

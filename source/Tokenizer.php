@@ -74,4 +74,13 @@ class Tokenizer
         // Return the parsed set of tokens
         return $tokens;
     }
+
+    public function stringifyTokenList(array $token_list)
+    {
+        $strings = [];
+        foreach ($token_list as $token) {
+            $strings[] = $token->string;
+        }
+        return implode(' ', $strings);
+    }
 }
