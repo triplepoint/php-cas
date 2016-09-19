@@ -18,69 +18,17 @@ class Expression
      */
     public static function fromString($expression)
     {
-        $recognized_tokens = [
-            new Token('(', Token::TYPE_OPEN_PARENTHESIS),
-            new Token(')', Token::TYPE_CLOSE_PARENTHESIS),
-            new Token('*', Token::TYPE_OPERATOR, 1),
-            new Token('/', Token::TYPE_OPERATOR, 1),
-            new Token('+', Token::TYPE_OPERATOR, 2),
-            new Token('-', Token::TYPE_OPERATOR, 2),
+        $split_tokens = [
+            new Token\OpenParenthesis(),
+            new Token\CloseParenthesis(),
+            new Token\Operator('*', 1),
+            new Token\Operator('/', 1),
+            new Token\Operator('+', 2),
+            new Token\Operator('-', 2),
         ];
 
-        $token_list = Tokenizer::tokenize($expression, $recognized_tokens);
+        $token_list = TokenList::tokenizeString($expression, $split_tokens);
         return new self($token_list);
-    }
-
-    /**
-     * Given a tokenized expression as a list, test whether the parentheses are
-     * properly nested and balanced.
-     */
-    protected static function testBalancedParentheses(array $token_list)
-    {
-        // Step through the tokenized expression from left to right, looking
-        // for unbalanced parentheses.
-        $paren_count = 0;
-        foreach ($token_list as $token) {
-
-            // Keep track of the current open parenthesis count
-            if ($token->type === TOKEN::TYPE_OPEN_PARENTHESIS) {
-                ++$paren_count;
-            } elseif ($token->type === TOKEN::TYPE_CLOSE_PARENTHESIS) {
-                --$paren_count;
-            }
-
-            // If we've closed more than we've opened, that's an error
-            if ($paren_count < 0) {
-                throw new Exception\UnbalancedParentheses([':expression' => Tokenizer::stringifyTokenList($token_list)]);
-            }
-        }
-
-        // Now that we're done, if there's still any unclosed parentheses,
-        // that's also an error
-        if ($paren_count !== 0) {
-            throw new Exception\UnbalancedParentheses([':expression' => Tokenizer::stringifyTokenList($token_list)]);
-        }
-    }
-
-    /**
-     * Remove any and all matching pairs of parentheses that enclose the entire
-     * expression.
-     */
-    protected static function stripOuterParentheses(array $token_list)
-    {
-        while (count($token_list) > 0 &&
-               $token_list[0]->type === TOKEN::TYPE_OPEN_PARENTHESIS &&
-               $token_list[count($token_list) - 1]->type === TOKEN::TYPE_CLOSE_PARENTHESIS
-        ) {
-            try {
-                $new_token_list = array_slice($token_list, 1, -1);
-                self::testBalancedParentheses($new_token_list);
-                $token_list = $new_token_list;
-            } catch (Exception\UnbalancedParentheses $e) {
-                return $token_list;
-            }
-        }
-        return $token_list;
     }
 
     /**
@@ -88,21 +36,21 @@ class Expression
      * and skipping over parenthesis blocks.  Return the index of the found
      * operator.  If there's no operator found, return false.
      */
-    protected static function findSplitOperator(array $token_list)
+    protected static function findSplitOperator(TokenList $token_list)
     {
         $operators = [];
 
         // Loop over all the tokens in the expression, last to first
-        $token_list = array_reverse($token_list, true);
+        $token_list = $token_list->reverse(true);
         $paren_count = 0;
         foreach ($token_list as $position => $token) {
 
             // If this token is a parenthesis, handle the counter and move
             // on to the next token
-            if ($token->type === Token::TYPE_CLOSE_PARENTHESIS) {
+            if ($token instanceof Token\CloseParenthesis) {
                 ++$paren_count;
                 continue;
-            } elseif ($token->type === Token::TYPE_OPEN_PARENTHESIS) {
+            } elseif ($token instanceof Token\OpenParenthesis) {
                 --$paren_count;
                 continue;
             }
@@ -114,7 +62,7 @@ class Expression
 
             // If the token is an operator, record its position in the operators
             // set, indexed by its precedence
-            if ($token->type === Token::TYPE_OPERATOR) {
+            if ($token instanceof Token\Operator) {
                 $operators[$token->precedence][] = $position;
             }
         }
@@ -137,40 +85,9 @@ class Expression
     }
 
     /**
-     * For operand Tokens, ensure that they're properly formed.  They can be:
-     * - anything php considers is_numeric(), or
-     * - anything that passes php's variable name rules
-     * See php's documentation on variables:
-     * http://php.net/manual/en/language.variables.basics.php
+     * The normalized list of Tokens that are parsed into the expression.
      */
-    protected static function validateOperand(Token $operand)
-    {
-        if (is_numeric($operand->string) ||
-            preg_match('/[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/', $operand->string) === 1
-        ) {
-            return;
-        }
-
-        throw new Exception\InvalidOperand([':operand' => $operand->string]);
-    }
-
-    /**
-     * Given an operand token, convert it into valid PHP code snippet as a
-     * string.  If the string is a defined constant that begins with 'M_',
-     * we'll allow it on the assumption that it's one of PHP's builtin math
-     * constants.
-     * See http://php.net/manual/en/math.constants.php
-     */
-    protected static function operandAsPHP(Token $operand)
-    {
-        $string = $operand->string;
-        if (is_numeric($string)) {
-            return $string;
-        } elseif (defined($string) && strpos($string, 'M_') === 0) {
-            return $string;
-        }
-        return '$'.$string;
-    }
+    protected $token_list;
 
     /**
      * can be either an array with 'lhs' and 'rhs' Expression elements, plus a
@@ -183,35 +100,35 @@ class Expression
      * Given a tokenized expression as a list, parse it into a structured tree
      * where each element is either an operand Token, or another Expression.
      */
-    public function __construct(array $token_list)
+    public function __construct(TokenList $token_list)
     {
-        self::testBalancedParentheses($token_list);
+        $token_list->testBalancedParentheses();
 
-        $token_list = self::stripOuterParentheses($token_list);
+        $this->token_list = $token_list->stripOuterParentheses();
 
         // If the token list is now empty, let's treat that as a single ""
         // operand token, for validation purposes.
-        if (count($token_list) === 0) {
-            $token_list[] = new Token('', Token::TYPE_OPERAND);
+        if ($this->token_list->count() === 0) {
+            $this->token_list[] = new Token\Operand('');
         }
 
-        $operator_index = self::findSplitOperator($token_list);
+        $operator_index = self::findSplitOperator($this->token_list);
 
         if ($operator_index === false) {
 
             // If there were no operators identified in the token list, then it
             // must be a lone operand.
-            self::validateOperand($token_list[0]);
-            $this->expression = $token_list[0];
+            $this->token_list[0]->validate();
+            $this->expression = $this->token_list[0];
 
         } else {
 
             // Otherwise, split the token list on the identified operator Token,
             // into a left-hand side and a right-hand side Expression.
             $this->expression = [
-                'lhs'      => new self(array_slice($token_list, 0, $operator_index)),
-                'operator' => $token_list[$operator_index],
-                'rhs'      => new self(array_slice($token_list, $operator_index + 1)),
+                'lhs'      => new self($this->token_list->slice(0, $operator_index)),
+                'operator' => $this->token_list[$operator_index],
+                'rhs'      => new self($this->token_list->slice($operator_index + 1)),
             ];
         }
     }
@@ -222,28 +139,30 @@ class Expression
      */
     public function isSingleOperand()
     {
-        return ($this->expression instanceof Token);
+        return is_subclass_of($this->expression, Token\AbstractToken::class);
     }
 
     public function expand()
     {
+        // TODO
         return $this;
     }
 
     public function factorFor($variable)
     {
-        return $this;
+        // TODO
         // probably expand() to start with, then gather variables
+        return $this;
     }
 
     public function __toString()
     {
         if ($this->isSingleOperand()) {
-            return $this->expression->string;
+            return (string) $this->expression;
         }
         return  '(' .
-            (string) $this->expression['lhs'] .
-            ' ' . $this->expression['operator']->string . ' ' .
+            (string) $this->expression['lhs'] . ' ' .
+            (string) $this->expression['operator'] . ' ' .
             (string) $this->expression['rhs'] .
             ')';
     }
@@ -256,11 +175,11 @@ class Expression
     public function toPhpString()
     {
         if ($this->isSingleOperand()) {
-            return self::operandAsPHP($this->expression);
+            return $this->expression->toPhpString();
         }
         return  '(' .
-            $this->expression['lhs']->toPhpString() .
-            ' ' . $this->expression['operator']->string . ' ' .
+            $this->expression['lhs']->toPhpString() . ' ' .
+            (string) $this->expression['operator'] . ' ' .
             $this->expression['rhs']->toPhpString() .
             ')';
     }

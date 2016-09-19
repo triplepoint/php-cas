@@ -70,27 +70,6 @@ class ExpressionTest extends TestCase
     }
 
     /**
-     * @dataProvider unbalancedParenthesesProvider
-     * @expectedException \CAS\Exception\UnbalancedParentheses
-     */
-    public function testUnbalancedParentheses($input)
-    {
-        $exp = Expression::fromString($input);
-    }
-
-    public function unbalancedParenthesesProvider()
-    {
-        return [
-            ['(x+1'],
-            ['x+1)'],
-            ['(x+1))'],
-            ['((x+1)'],
-            [')x+1('],
-            ['))x+1(('],
-        ];
-    }
-
-    /**
      * @dataProvider invalidOperandProvider
      * @expectedException \CAS\Exception\InvalidOperand
      */

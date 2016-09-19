@@ -17,24 +17,24 @@ class Relation
      */
     public static function fromString($relation)
     {
-        $recognized_tokens = [
-            new Token('=', Token::TYPE_RELATION),
-            new Token('<', Token::TYPE_RELATION),
-            new Token('<=', Token::TYPE_RELATION),
-            new Token('>', Token::TYPE_RELATION),
-            new Token('>=', Token::TYPE_RELATION),
+        $split_tokens = [
+            new Token\Relation('='),
+            new Token\Relation('<'),
+            new Token\Relation('<='),
+            new Token\Relation('>'),
+            new Token\Relation('>='),
         ];
 
-        $token_list = Tokenizer::tokenize($relation, $recognized_tokens);
+        $token_list = TokenList::tokenizeString($relation, $split_tokens);
 
-        if (count($token_list) !== 3) {
+        if ($token_list->count() !== 3) {
             throw new Exception\WrongCountRelationOperators([':string' => $relation]);
         }
 
         return new self(
-            Expression::fromString($token_list[0]->string),
+            Expression::fromString((string) $token_list[0]),
             $token_list[1],
-            Expression::fromString($token_list[2]->string)
+            Expression::fromString((string) $token_list[2])
         );
     }
 
@@ -51,8 +51,8 @@ class Relation
 
     public function __toString()
     {
-        return (string) $this->lhs .
-               ' '. $this->operator->string . ' ' .
+        return (string) $this->lhs . ' ' .
+               (string) $this->operator . ' ' .
                (string) $this->rhs;
     }
 

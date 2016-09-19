@@ -17,6 +17,7 @@ class RelationSolver
 
         // 1 - Move all the terms to the left hand side
         // ex: ((((x + a) * b) + ((x + c) * d)) - (x + e)) = 0
+        //$rel = new Relation();
 
         // 2 - While the left hand side term is not just the target variable, apply the algorithm:
         // - Factor the left hand side for the target variable, resulting in a set of polynomial terms
