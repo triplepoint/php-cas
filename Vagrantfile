@@ -9,7 +9,7 @@ Vagrant.configure(2) do |config|
 
     # Virtualbox, for all instances
     config.vm.provider "virtualbox" do |vb, override|
-        override.vm.box = "ubuntu/trusty64"
+        override.vm.box = "ubuntu/bionic64"
         vb.memory = "1024" # in MB
 
         override.vm.network "private_network", type: "dhcp"
